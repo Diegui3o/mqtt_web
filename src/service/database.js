@@ -53,7 +53,7 @@ export const writeSensorData = (data) => {
 
     // Escribir en InfluxDB
     writeApi.writePoint(point);
-    console.log('🔹 Modo almacenado en InfluxDB:', modo);
+    // console.log('🔹 Modo almacenado en InfluxDB:', modo);
 };
 
 // Función para cerrar la conexión de escritura

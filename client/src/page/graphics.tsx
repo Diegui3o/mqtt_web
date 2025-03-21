@@ -1,4 +1,5 @@
 import AnglesDisplay from "./AnglesDisplay";
+import SensorChart from "./data_rec";
 
 export default function Graphics() {
   return (
@@ -8,6 +9,10 @@ export default function Graphics() {
       <div>
         <h2>Visualización de Ángulos</h2>
         <AnglesDisplay />
+      </div>
+      <div>
+        <h2>Dashboards</h2>
+        <SensorChart />
       </div>
     </div>
   );
