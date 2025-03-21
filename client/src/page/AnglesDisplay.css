@@ -1,0 +1,15 @@
+.neon-card {
+  border: 1px solid rgba(15, 61, 61, 0.492);
+  box-shadow: 0 0 10px rgba(29, 59, 59, 0.607), 0 0 40px rgb(59, 94, 94);
+}
+
+.label-text {
+  color: #000;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.value-text {
+  color: rgb(10, 53, 53);
+  text-shadow: 0 0 5px rgb(11, 20, 56), 0 0 20px rgb(27, 70, 70);
+  font-family: 'Courier New', Courier, monospace;
+}

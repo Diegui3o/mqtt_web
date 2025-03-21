@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { Card, CardContent } from "../components/ui/Card"; // Corrected import path
+import "./AnglesDisplay.css"; // Import the CSS file for neon styling
 
 const DroneAngles = () => {
   const [angles, setAngles] = useState<{
@@ -48,7 +49,7 @@ const DroneAngles = () => {
   });
 
   useEffect(() => {
-    const socket = io("http://localhost:3000");
+    const socket = io("http://localhost:3002");
 
     socket.on("angles", (data) => {
       // console.log("📡 Datos recibidos:", data);
@@ -83,28 +84,90 @@ const DroneAngles = () => {
   }, []);
 
   return (
-    <Card className="p-4 shadow-lg rounded-lg bg-white">
+    <Card className="p-4 shadow-lg rounded-lg bg-black neon-card">
       <CardContent>
-        <p>Roll: {angles.roll.toFixed(2)}</p>
-        <p>Pitch: {angles.pitch.toFixed(2)}</p>
-        <p>Yaw: {angles.yaw.toFixed(2)}</p>
-        <p>Acceleration X [g]: {angles.AccX.toFixed(2)}</p>
-        <p>Acceleration Y [g]: {angles.AccY.toFixed(2)}</p>
-        <p>Acceleration Z [g]: {angles.AccZ.toFixed(2)}</p>
-        <p>Rate Roll: {angles.RateRoll.toFixed(2)}</p>
-        <p>Rate Pitch: {angles.RatePitch.toFixed(2)}</p>
-        <p>Rate Yaw: {angles.RateYaw.toFixed(2)}</p>
-        <p>GyroXdps: {angles.GyroXdps.toFixed(2)}</p>
-        <p>GyroYdps: {angles.GyroYdps.toFixed(2)}</p>
-        <p>GyroZdps: {angles.GyroZdps.toFixed(2)}</p>
-        <p>KalmanAngleRoll: {angles.KalmanAngleRoll.toFixed(2)}</p>
-        <p>KalmanAnglePitch: {angles.KalmanAnglePitch.toFixed(2)}</p>
-        <p>MotorInput1: {angles.MotorInput1.toFixed(2)}</p>
-        <p>MotorInput2: {angles.MotorInput2.toFixed(2)}</p>
-        <p>MotorInput3: {angles.MotorInput3.toFixed(2)}</p>
-        <p>MotorInput4: {angles.MotorInput4.toFixed(2)}</p>
-        <p>Altura actual: {angles.distancia.toFixed(2)}</p>
-        <p>Modo actual: {angles.modo.toFixed(2)}</p>
+        <h2 className="neon-text">Drone Angles</h2>
+        <p className="label-text">
+          Roll: <span className="value-text">{angles.roll.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          Pitch: <span className="value-text">{angles.pitch.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          Yaw: <span className="value-text">{angles.yaw.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          Acceleration X [g]:{" "}
+          <span className="value-text">{angles.AccX.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          Acceleration Y [g]:{" "}
+          <span className="value-text">{angles.AccY.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          Acceleration Z [g]:{" "}
+          <span className="value-text">{angles.AccZ.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          Rate Roll:{" "}
+          <span className="value-text">{angles.RateRoll.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          Rate Pitch:{" "}
+          <span className="value-text">{angles.RatePitch.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          Rate Yaw:{" "}
+          <span className="value-text">{angles.RateYaw.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          GyroXdps:{" "}
+          <span className="value-text">{angles.GyroXdps.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          GyroYdps:{" "}
+          <span className="value-text">{angles.GyroYdps.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          GyroZdps:{" "}
+          <span className="value-text">{angles.GyroZdps.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          KalmanAngleRoll:{" "}
+          <span className="value-text">
+            {angles.KalmanAngleRoll.toFixed(2)}
+          </span>
+        </p>
+        <p className="label-text">
+          KalmanAnglePitch:{" "}
+          <span className="value-text">
+            {angles.KalmanAnglePitch.toFixed(2)}
+          </span>
+        </p>
+        <p className="label-text">
+          MotorInput1:{" "}
+          <span className="value-text">{angles.MotorInput1.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          MotorInput2:{" "}
+          <span className="value-text">{angles.MotorInput2.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          MotorInput3:{" "}
+          <span className="value-text">{angles.MotorInput3.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          MotorInput4:{" "}
+          <span className="value-text">{angles.MotorInput4.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          Altura actual:{" "}
+          <span className="value-text">{angles.distancia.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          Modo actual:{" "}
+          <span className="value-text">{angles.modo.toFixed(2)}</span>
+        </p>
       </CardContent>
     </Card>
   );

@@ -22,7 +22,7 @@ import {
 } from "@mui/material";
 
 export default function Layout() {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <div className="h-screen flex flex-col">

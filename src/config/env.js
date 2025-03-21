@@ -1,7 +1,10 @@
-require('dotenv').config();
-const { get } = require('env-var');
+import { config } from 'dotenv';
+import pkg from 'env-var';
+const { get } = pkg;
 
-const envs = {
+config();
+
+export const envs = {
     PORT: get('PORT').required().asPortNumber(),
     PUBLIC_PATH: get('PUBLIC_PATH').default('public').asString(),
     MQTT_BROKER_URL: get('MQTT_BROKER_URL').required().asString(),
@@ -14,5 +17,3 @@ const envs = {
     MOTORS_TOPIC: get('MOTORS_TOPIC').required().asString(),
     MODE_TOPIC: get('MODE_TOPIC').required().asString(),
 };
-
-module.exports = { envs };

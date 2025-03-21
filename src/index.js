@@ -1,9 +1,10 @@
-const express = require('express');
-const cors = require('cors');
-const mqtt = require('mqtt');
-const http = require('http');
-const { envs } = require('./config/env');
-const { Server } = require('socket.io');
+import express, { json } from 'express';
+import cors from 'cors';
+import { connect } from 'mqtt';
+import { createServer } from 'http';
+import { envs } from './config/env.js';
+import { Server } from 'socket.io';
+import { writeSensorData, closeConnection, getCurrentMode } from './service/database.js';
 
 const PORT = envs.PORT;
 
@@ -20,7 +21,7 @@ const modeTopic = envs.MODE_TOPIC;
 
 // Crear servidor Express
 const app = express();
-const server = http.createServer(app);
+const server = createServer(app);
 const io = new Server(server, {
     cors: {
         origin: 'http://localhost:5173', // Update to match the client origin
@@ -28,14 +29,14 @@ const io = new Server(server, {
     },
 });
 
-app.use(express.json());
+app.use(json());
 app.use(cors({
     origin: 'http://localhost:5173', // Update to match the client origin
     methods: ['GET', 'POST'],
 }));
 
 // Conectar al broker MQTT
-const mqttClient = mqtt.connect(mqttBrokerUrl);
+const mqttClient = connect(mqttBrokerUrl);
 
 // Variable global para el modo (modo predeterminado = 1)
 let modo = 1;
@@ -88,13 +89,18 @@ mqttClient.on('message', (topic, message) => {
         // console.log('📡 Estado de motores recibido:', data);
         motorsData = data;
     } else if (topic === modeTopic) {
-        modo = parseInt(message.toString());
-        // console.log(`🔄 Modo actualizado desde MQTT: ${modo}`);
-        io.emit('modo', modo);
+        const nuevoModo = parseInt(message.toString());
+        if (!isNaN(nuevoModo) && [0, 1, 2].includes(nuevoModo)) {
+            modo = nuevoModo;
+            io.emit('modo', modo);
+            console.log(`📢 Evento 'modo' emitido a los clientes: ${modo}`);
+        } else {
+            console.warn(`⚠️ Modo inválido recibido: ${message.toString()}`);
+        }
     }
 
     // Emitir todos los datos combinados
-    io.emit('angles', {
+    const combinedData = {
         ...anglesData,
         ...ratesData,
         ...accData,
@@ -102,7 +108,13 @@ mqttClient.on('message', (topic, message) => {
         ...kalmanData,
         ...motorsData,
         modo: modo,
-    });
+    };
+
+    // Escribir los datos en InfluxDB
+    writeSensorData(combinedData);
+
+    // Emitir todos los datos combinados
+    io.emit('angles', combinedData);
 });
 
 // WebSockets
@@ -153,21 +165,24 @@ app.get('/modo/:numero', (req, res) => {
         return res.status(400).json({ error: 'Modo inválido. Usa 0, 1 o 2' });
     }
 
-    modo = nuevoModo;
-    console.log(`🔄 Modo cambiado a: ${modo}`);
+    if (modo !== nuevoModo) {
+        modo = nuevoModo;
+        console.log(`🔄 Modo cambiado a: ${modo}`);
 
-    // Publicar el nuevo modo en MQTT
-    mqttClient.publish(modeTopic, String(modo), { qos: 1 }, (err) => {
-        if (err) {
-            console.error('❌ Error al publicar en MQTT:', err);
-            return res.status(500).json({ error: 'Error al publicar en MQTT' });
-        }
+        mqttClient.publish(modeTopic, String(modo), { qos: 1 }, (err) => {
+            if (err) {
+                console.error('❌ Error al publicar en MQTT:', err);
+                return res.status(500).json({ error: 'Error al publicar en MQTT' });
+            }
 
-        // Notificar a los clientes WebSocket
-        io.emit('modo', modo); // Asegúrate de que esto se esté ejecutando
-        console.log(`📢 Evento 'modo' emitido a los clientes: ${modo}`);
-        res.json({ message: `Modo cambiado a ${modo}` });
-    });
+            io.emit('modo', modo);
+            console.log(`📢 Evento 'modo' emitido a los clientes: ${modo}`);
+            res.json({ message: `Modo cambiado a ${modo}` });
+        });
+    } else {
+        console.log('🔄 Modo recibido es el mismo que el actual, no se envía.');
+        res.json({ message: 'Modo no cambiado porque es el mismo' });
+    }
 });
 
 // ⚡ Acciones según el modo
@@ -185,13 +200,29 @@ app.get('/accion', (req, res) => {
 
         case 2:
             console.log("🟢 Modo 2: Apagando motores");
-            mqttClient.publish(controlTopic, 'OFF_MOTORS');
             res.json({ message: 'Modo 2:' });
             break;
+    }
+});
+
+// Ruta para obtener el modo actual
+app.get('/modo/actual', async (req, res) => {
+    try {
+        const modo = await getCurrentMode();
+        res.json({ modo });
+    } catch (error) {
+        console.error('Error consultando el modo:', error);
+        res.status(500).json({ error: 'Error al consultar el modo' });
     }
 });
 
 // Iniciar el servidor HTTP
 server.listen(PORT, () => {
     console.log(`🚀 Servidor Express corriendo en http://localhost:${PORT}`);
+});
+
+// Cerrar la conexión de InfluxDB al detener el servidor
+process.on('SIGINT', () => {
+    closeConnection();
+    process.exit(0);
 });
