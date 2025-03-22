@@ -2,7 +2,10 @@
   "name": "dron_mqtt",
   "version": "1.0.0",
   "main": "index.js",
+<<<<<<< HEAD
   "type": "module",
+=======
+>>>>>>> 5f824acfbbc60441a94b55e5f2cfa71d368d0975
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js"

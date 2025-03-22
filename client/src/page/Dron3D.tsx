@@ -53,8 +53,13 @@ function Drone() {
 // Escena principal
 export default function Dron3D() {
   return (
+<<<<<<< HEAD
     <div style={{ width: "70vw", height: "70vh" }}>
       <Canvas shadows camera={{ position: [0, 0, 5], fov: 50 }}>
+=======
+    <div style={{ width: "100vw", height: "100vh" }}>
+      <Canvas shadows camera={{ position: [0, 2, 5], fov: 75 }}>
+>>>>>>> 5f824acfbbc60441a94b55e5f2cfa71d368d0975
         <ambientLight intensity={0.5} />
         <directionalLight position={[5, 10, 5]} castShadow intensity={1.5} />
         <OrbitControls />
