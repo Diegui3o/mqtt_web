@@ -6,7 +6,6 @@ const socket = io("http://localhost:3002");
 const ModeSwitch = () => {
   const [modo, setModo] = useState<number>(1);
 
-<<<<<<< HEAD
   const fetchCurrentMode = async () => {
     try {
       const response = await fetch("http://localhost:3002/modo/actual", {
@@ -51,24 +50,12 @@ const ModeSwitch = () => {
       } else {
         throw new Error("Respuesta del servidor no válida");
       }
-=======
-  const cambiarModo = async (nuevoModo: number) => {
-    try {
-      const response = await fetch(`http://localhost:3002/modo/${nuevoModo}`);
-      if (!response.ok) {
-        throw new Error(`Error en la solicitud: ${response.statusText}`);
-      }
-      const data = await response.json();
-      console.log("Respuesta del servidor:", data.message);
-      // No es necesario llamar a setModo aquí, ya que el servidor emitirá el nuevo modo a través de WebSocket
->>>>>>> 5f824acfbbc60441a94b55e5f2cfa71d368d0975
     } catch (error) {
       console.error("Error cambiando el modo:", error);
     }
   };
 
   useEffect(() => {
-<<<<<<< HEAD
     fetchCurrentMode();
     console.log("📡 Suscribiéndose al evento 'modo'...");
 
@@ -84,14 +71,6 @@ const ModeSwitch = () => {
 
     return () => {
       console.log("🔄 Desuscribiéndose del evento 'modo'");
-=======
-    socket.on("modo", (nuevoModo: number) => {
-      console.log("Modo actualizado desde el servidor:", nuevoModo);
-      setModo(nuevoModo);
-    });
-
-    return () => {
->>>>>>> 5f824acfbbc60441a94b55e5f2cfa71d368d0975
       socket.off("modo");
     };
   }, []);
@@ -103,7 +82,6 @@ const ModeSwitch = () => {
       </h2>
       <select
         className="bg-gray-700 text-white p-2 border border-gray-600 rounded-md"
-<<<<<<< HEAD
         value={modo}
         onChange={(e) => {
           const nuevoModo = Number(e.target.value);
@@ -115,12 +93,6 @@ const ModeSwitch = () => {
           } else {
             console.warn("⚠️ Modo seleccionado no válido, ignorando...");
           }
-=======
-        value={modo !== null && modo !== undefined ? modo : 1}
-        onChange={(e) => {
-          console.log("Modo seleccionado:", e.target.value);
-          cambiarModo(Number(e.target.value));
->>>>>>> 5f824acfbbc60441a94b55e5f2cfa71d368d0975
         }}
       >
         <option value={0}>Modo 0 - Encender Motores</option>
