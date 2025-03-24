@@ -10,3 +10,29 @@ git push -u origin main
 git remote add origin https://github.com/Diegui3o/mqtt_web.git
 git branch -M main
 git push -u origin main
+
+
+
+float AngleRoll
+float AnglePitch
+float AngleYaw
+float RateRoll
+float RatePitch
+float RateYaw
+float AccX
+float AccY
+float AccZ
+float GyroXdps
+float GyroYdps
+float GyroZdps
+float KalmanAngleRoll
+float KalmanAnglePitch
+float MotorInput1
+float MotorInput2
+float MotorInput3
+float MotorInput4
+
+
+switch_state modo 0 1 2 3 etc
+boolean led_status 1 o 0
+booleanField motor_status 1 o 0

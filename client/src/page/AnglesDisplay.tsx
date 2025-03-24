@@ -19,6 +19,12 @@ const DroneAngles = () => {
     GyroZdps: number;
     KalmanAngleRoll: number;
     KalmanAnglePitch: number;
+    complementaryAngleRoll: number;
+    complementaryAnglePitch: number;
+    InputThrottle: number;
+    InputRoll: number;
+    InputPitch: number;
+    InputYaw: number;
     MotorInput1: number;
     MotorInput2: number;
     MotorInput3: number;
@@ -40,6 +46,12 @@ const DroneAngles = () => {
     GyroZdps: 0,
     KalmanAngleRoll: 0,
     KalmanAnglePitch: 0,
+    complementaryAngleRoll: 0,
+    complementaryAnglePitch: 0,
+    InputThrottle: 0,
+    InputRoll: 0,
+    InputPitch: 0,
+    InputYaw: 0,
     MotorInput1: 0,
     MotorInput2: 0,
     MotorInput3: 0,
@@ -55,9 +67,9 @@ const DroneAngles = () => {
       // console.log("📡 Datos recibidos:", data);
       setAngles((prevAngles) => ({
         ...prevAngles,
-        roll: data?.AngleRoll ?? prevAngles.roll,
-        pitch: data?.AnglePitch ?? prevAngles.pitch,
-        yaw: data?.AngleYaw ?? prevAngles.yaw,
+        roll: data?.roll ?? prevAngles.roll,
+        pitch: data?.pitch ?? prevAngles.pitch,
+        yaw: data?.yaw ?? prevAngles.yaw,
         RateRoll: data?.RateRoll ?? prevAngles.RateRoll,
         RatePitch: data?.RatePitch ?? prevAngles.RatePitch,
         RateYaw: data?.RateYaw ?? prevAngles.RateYaw,
@@ -69,6 +81,14 @@ const DroneAngles = () => {
         GyroZdps: data?.GyroZdps ?? prevAngles.GyroZdps,
         KalmanAngleRoll: data?.KalmanAngleRoll ?? prevAngles.KalmanAngleRoll,
         KalmanAnglePitch: data?.KalmanAnglePitch ?? prevAngles.KalmanAnglePitch,
+        complementaryAngleRoll:
+          data?.complementaryAngleRoll ?? prevAngles.complementaryAngleRoll,
+        complementaryAnglePitch:
+          data?.complementaryAnglePitch ?? prevAngles.complementaryAnglePitch,
+        InputThrottle: data?.InputThrottle ?? prevAngles.InputThrottle,
+        InputRoll: data?.InputRoll ?? prevAngles.InputRoll,
+        InputPitch: data?.InputPitch ?? prevAngles.InputPitch,
+        InputYaw: data?.InputYaw ?? prevAngles.InputYaw,
         MotorInput1: data?.MotorInput1 ?? prevAngles.MotorInput1,
         MotorInput2: data?.MotorInput2 ?? prevAngles.MotorInput2,
         MotorInput3: data?.MotorInput3 ?? prevAngles.MotorInput3,
@@ -143,6 +163,34 @@ const DroneAngles = () => {
           <span className="value-text">
             {angles.KalmanAnglePitch.toFixed(2)}
           </span>
+        </p>
+        <p className="label-text">
+          complementaryAngleRoll:{" "}
+          <span className="value-text">
+            {angles.complementaryAngleRoll.toFixed(2)}
+          </span>
+        </p>
+        <p className="label-text">
+          complementaryAnglePitch:{" "}
+          <span className="value-text">
+            {angles.complementaryAnglePitch.toFixed(2)}
+          </span>
+        </p>
+        <p className="label-text">
+          InputThrottle:{" "}
+          <span className="value-text">{angles.InputThrottle.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          InputRoll:{" "}
+          <span className="value-text">{angles.InputRoll.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          InputPitch:{" "}
+          <span className="value-text">{angles.InputPitch.toFixed(2)}</span>
+        </p>
+        <p className="label-text">
+          InputYaw:{" "}
+          <span className="value-text">{angles.InputYaw.toFixed(2)}</span>
         </p>
         <p className="label-text">
           MotorInput1:{" "}

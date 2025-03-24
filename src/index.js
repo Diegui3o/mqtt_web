@@ -5,6 +5,7 @@ import { createServer } from 'http';
 import { envs } from './config/env.js';
 import { Server } from 'socket.io';
 import sensorRoutes from './server/server.js';
+import { insertSensorData, insertControlState } from './server/questdb.js';
 
 const app = express();
 const server = createServer(app);
@@ -44,6 +45,10 @@ const {
 } = envs;
 
 let modo = 1;
+let estadoControl = {
+    led: false,
+    motor: false
+};
 let anglesData = {}, ratesData = {}, accData = {}, gyroData = {}, kalmanData = {}, motorsData = {};
 
 mqttClient.on('connect', () => {
@@ -63,7 +68,13 @@ mqttClient.on('message', (topic, message) => {
     const data = JSON.parse(message.toString());
 
     switch (topic) {
-        case ANGLES_TOPIC: anglesData = data; break;
+        case ANGLES_TOPIC:
+            anglesData = {
+                roll: data.AngleRoll,
+                pitch: data.AnglePitch,
+                yaw: data.AngleYaw,
+            };
+            break;
         case RATES_TOPIC: ratesData = data; break;
         case ACC_TOPIC: accData = data; break;
         case GYRO_TOPIC: gyroData = data; break;
@@ -78,13 +89,7 @@ mqttClient.on('message', (topic, message) => {
             }
             break;
     }
-    if (topic === ANGLES_TOPIC && data.AngleRoll !== undefined && data.AnglePitch !== undefined) {
-        io.emit("sensorData", {
-            time: new Date().toISOString(),
-            value: data.AngleRoll,
-            pitch: data.AnglePitch,
-        });
-    }
+
     const combinedData = {
         ...anglesData,
         ...ratesData,
@@ -96,6 +101,12 @@ mqttClient.on('message', (topic, message) => {
     };
 
     io.emit('angles', combinedData);
+    insertSensorData(combinedData, modo).catch(console.error);
+
+    io.emit("datosCompleto", {
+        time: new Date().toISOString(),
+        ...combinedData
+    });
 });
 
 io.on('connection', (socket) => {
@@ -105,22 +116,26 @@ io.on('connection', (socket) => {
 // Endpoints para LED y motores
 app.get('/led/on', (req, res) => {
     mqttClient.publish(CONTROL_TOPIC, 'ON_LED');
+    insertControlState(modo, estadoControl.led, true);
     res.json({ message: "LED encendido" });
 });
 
 app.get('/led/off', (req, res) => {
     mqttClient.publish(CONTROL_TOPIC, 'OFF_LED');
+    insertControlState(modo, estadoControl.led, false);
     res.json({ message: "LED apagado" });
 });
 
 app.get('/motores/on', (req, res) => {
     mqttClient.publish(CONTROL_TOPIC, 'ON_MOTORS');
-    res.json({ message: 'MOTORES ENCENDIDOS' });
+    insertControlState(modo, true, estadoControl.motor);
+    res.json({ message: "MOTORES ENCENDIDOS" });
 });
 
 app.get('/motores/off', (req, res) => {
     mqttClient.publish(CONTROL_TOPIC, 'OFF_MOTORS');
-    res.json({ message: 'MOTORES APAGADOS' });
+    insertControlState(modo, false, estadoControl.motor);
+    res.json({ message: "MOTORES APAGADOS" });
 });
 
 // Endpoint para cambiar modo

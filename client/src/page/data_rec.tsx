@@ -1,120 +1,305 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useReducer, useCallback } from "react";
 import { io } from "socket.io-client";
+import { Line, Bar } from "react-chartjs-2";
 import {
-  LineChart,
-  Line,
-  YAxis,
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
   Tooltip,
-  ResponsiveContainer,
-  XAxis,
-  CartesianGrid,
   Legend,
-} from "recharts";
+} from "chart.js";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const socket = io("http://localhost:3002");
 
-interface SensorData {
+interface DatosSensor {
   time: string;
-  value: number;
-  pitch: number;
+  roll?: number;
+  pitch?: number;
+  AccX?: number;
+  AccY?: number;
+  AccZ?: number;
+  KalmanAngleRoll?: number;
+  KalmanAnglePitch?: number;
+  complementaryAngleRoll?: number;
+  complementaryAnglePitch?: number;
+  InputThrottle?: number;
+  InputRoll?: number;
+  InputPitch?: number;
+  InputYaw?: number;
+  MotorInput1?: number;
+  MotorInput2?: number;
+  MotorInput3?: number;
+  MotorInput4?: number;
+  [key: string]: number | string | undefined;
 }
 
-const SensorChart = () => {
-  const [data, setData] = useState<SensorData[]>([]);
+const colores: Record<string, string> = {
+  roll: "#b07acc",
+  pitch: "#3F51B5",
+  RateRoll: "#1Ea2E5",
+  RatePitch: "#F4ab00",
+  RateYaw: "#F4dcca",
+  GyroXdps: "#4236ab",
+  GyroYdps: "#345aef",
+  GyroZdps: "#3cd44d",
+  KalmanAngleRoll: "#1Ea7E5",
+  KalmanAnglePitch: "#a73935",
+  complementaryAngleRoll: "#67aC41",
+  complementaryAnglePitch: "#0a7b53",
+  InputThrottle: "#FDD835",
+  InputRoll: "#43A047",
+  InputPitch: "#FB8b0",
+  InputYaw: "#5E35B1",
+  MotorInput1: "#F44336",
+  MotorInput2: "#d84a75",
+  MotorInput3: "#3F5bB5",
+  MotorInput4: "#009688",
+};
+
+type Action = { type: "ADD_DATA"; payload: DatosSensor[] };
+
+const dataReducer = (state: DatosSensor[], action: Action): DatosSensor[] => {
+  switch (action.type) {
+    case "ADD_DATA": {
+      const newData = [...state, ...action.payload];
+      return newData.slice(-100); // mantener últimos 50 datos
+    }
+    default:
+      return state;
+  }
+};
+
+const MultiSensorDashboard = () => {
+  const [data, dispatch] = useReducer(dataReducer, []);
+  const [selectedChart, setSelectedChart] = React.useState("Roll");
 
   useEffect(() => {
-    socket.on(
-      "sensorData",
-      (newPoint: { time: number; value: number; pitch: number }) => {
-        const formattedPoint = {
-          time: new Date(newPoint.time).toLocaleTimeString(),
-          value: newPoint.value,
-          pitch: newPoint.pitch,
-        };
+    const handler = (nuevoDato: DatosSensor) => {
+      const datoFormateado: DatosSensor = {
+        ...nuevoDato,
+        roll: Number(nuevoDato.roll),
+        pitch: Number(nuevoDato.pitch),
+        RateRoll: Number(nuevoDato.RateRoll),
+        RatePitch: Number(nuevoDato.RatePitch),
+        RateYaw: Number(nuevoDato.RateYaw),
+        GyroXdps: Number(nuevoDato.GyroXdps),
+        GyroYdps: Number(nuevoDato.GyroYdps),
+        GyroZdps: Number(nuevoDato.GyroZdps),
+        KalmanAngleRoll: Number(nuevoDato.KalmanAngleRoll),
+        KalmanAnglePitch: Number(nuevoDato.KalmanAnglePitch),
+        complementaryAngleRoll: Number(nuevoDato.complementaryAngleRoll),
+        complementaryAnglePitch: Number(nuevoDato.complementaryAnglePitch),
+        InputThrottle: Number(nuevoDato.InputThrottle),
+        InputRoll: Number(nuevoDato.InputRoll),
+        InputPitch: Number(nuevoDato.InputPitch),
+        InputYaw: Number(nuevoDato.InputYaw),
+        MotorInput1: Number(nuevoDato.MotorInput1),
+        MotorInput2: Number(nuevoDato.MotorInput2),
+        MotorInput3: Number(nuevoDato.MotorInput3),
+        MotorInput4: Number(nuevoDato.MotorInput4),
+        time: new Date(nuevoDato.time).toLocaleTimeString(),
+      };
 
-        setData((prev) => {
-          const updated = [...prev, formattedPoint];
-          return updated.slice(-100); // Mantener solo los últimos 100 puntos
-        });
-      }
-    );
+      dispatch({ type: "ADD_DATA", payload: [datoFormateado] });
+    };
+
+    socket.on("datosCompleto", handler);
 
     return () => {
-      socket.off("sensorData");
+      socket.off("datosCompleto", handler);
     };
   }, []);
 
+  const renderLineChart = useCallback(
+    (keys: string[], title: string) => {
+      const chartData = {
+        labels: data.map((d) => d.time),
+        datasets: keys.map((key) => ({
+          label: key,
+          data: data.map((d) =>
+            typeof d[key] === "number" ? (d[key] as number) : null
+          ),
+          borderColor: colores[key],
+          backgroundColor: colores[key] + "33",
+          borderWidth: 2,
+          tension: 0.3, // curva suave
+          pointRadius: 1,
+          fill: false,
+        })),
+      };
+
+      return (
+        <div style={{ width: "100%", height: "320px", marginBottom: "40px" }}>
+          <h3 style={{ marginLeft: "10px" }}>{title}</h3>
+          <Line
+            data={chartData}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: {
+                mode: "index",
+                intersect: false,
+              },
+              plugins: {
+                legend: {
+                  position: "top",
+                  labels: {
+                    color: "#333",
+                    font: { size: 12 },
+                  },
+                },
+                tooltip: {
+                  mode: "index",
+                  intersect: false,
+                },
+              },
+              scales: {
+                x: {
+                  ticks: { color: "#666" },
+                  grid: { display: false }, // Quitar la cuadrícula
+                },
+                y: {
+                  ticks: { color: "#666" },
+                  grid: { display: false }, // Quitar la cuadrícula
+                },
+              },
+              animation: false, // ✅ Desactivar animación para suavidad
+            }}
+          />
+        </div>
+      );
+    },
+    [data]
+  );
+
+  const renderBarChart = useCallback(
+    (keys: string[], title: string) => {
+      const chartData = {
+        labels: data.map((d) => d.time),
+        datasets: keys.map((key) => ({
+          label: key,
+          data: data.map((d) =>
+            typeof d[key] === "number" ? (d[key] as number) : null
+          ),
+          backgroundColor: colores[key],
+          borderRadius: 4,
+        })),
+      };
+
+      return (
+        <div style={{ width: "100%", height: "320px", marginBottom: "40px" }}>
+          <h3 style={{ marginLeft: "10px" }}>{title}</h3>
+          <Bar
+            data={chartData}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: "top",
+                  labels: {
+                    color: "#333",
+                    font: { size: 12 },
+                  },
+                },
+                tooltip: {
+                  mode: "index",
+                  intersect: false,
+                },
+              },
+              scales: {
+                x: {
+                  ticks: { color: "#666" },
+                  grid: { display: false }, // Quitar la cuadrícula
+                },
+                y: {
+                  ticks: { color: "#666" },
+                  grid: { display: false }, // Quitar la cuadrícula
+                },
+              },
+              animation: false,
+            }}
+          />
+        </div>
+      );
+    },
+    [data]
+  );
+
   return (
-    <div style={{ width: "100%", height: "350px", marginTop: "20px" }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={data}
-          margin={{ top: 20, right: 40, bottom: 20, left: 20 }}
+    <div style={{ padding: "20px" }}>
+      <div style={{ marginBottom: "20px" }}>
+        <label htmlFor="chartSelect" style={{ marginRight: "10px" }}>
+          Seleccionar gráfica:
+        </label>
+        <select
+          id="chartSelect"
+          onChange={(e) => setSelectedChart(e.target.value)}
+          value={selectedChart}
+          style={{
+            color: "black",
+            backgroundColor: "white",
+            padding: "5px",
+            borderRadius: "7px",
+            fontFamily: "helvetica",
+          }}
         >
-          <CartesianGrid strokeDasharray="4 4" stroke="#e0e0e0" />
-          <XAxis
-            dataKey="time"
-            tick={{ fontSize: 12, fill: "#555" }}
-            angle={-25}
-            textAnchor="end"
-            height={60}
-          />
-          <YAxis
-            yAxisId="left"
-            label={{
-              value: "Roll (°)",
-              angle: -90,
-              position: "insideLeft",
-              offset: -5,
-              style: { fill: "#007acc", fontSize: 12 },
-            }}
-            tick={{ fill: "#007acc", fontSize: 12 }}
-          />
-          <YAxis
-            yAxisId="right"
-            orientation="right"
-            label={{
-              value: "Pitch (°)",
-              angle: 90,
-              position: "insideRight",
-              offset: -5,
-              style: { fill: "#d84315", fontSize: 12 },
-            }}
-            tick={{ fill: "#d84315", fontSize: 12 }}
-          />
-          <Tooltip
-            contentStyle={{ fontSize: 12 }}
-            labelStyle={{ fontWeight: "bold" }}
-            formatter={(value: number, name: string) => [
-              `${value.toFixed(2)}°`,
-              name,
-            ]}
-          />
-          <Legend verticalAlign="top" height={36} iconType="circle" />
-          <Line
-            yAxisId="left"
-            type="monotone"
-            dataKey="value"
-            stroke="#007acc"
-            strokeWidth={2.5}
-            isAnimationActive={false}
-            dot={false}
-            name="Roll"
-          />
-          <Line
-            yAxisId="right"
-            type="monotone"
-            dataKey="pitch"
-            stroke="#d84315"
-            strokeWidth={2.5}
-            isAnimationActive={false}
-            dot={false}
-            name="Pitch"
-          />
-        </LineChart>
-      </ResponsiveContainer>
+          <option value="Roll">Roll Comparación</option>
+          <option value="Pitch">Pitch Comparación</option>
+          <option value="Rate">Rate Comparación</option>
+          <option value="Gyro">Gyro Comparación</option>
+          <option value="Input">Controles de Entrada</option>
+          <option value="Motor">Motores</option>
+        </select>
+      </div>
+
+      {selectedChart === "Roll" &&
+        renderLineChart(
+          ["roll", "KalmanAngleRoll", "complementaryAngleRoll"],
+          "Roll Comparación"
+        )}
+      {selectedChart === "Pitch" &&
+        renderLineChart(
+          ["pitch", "KalmanAnglePitch", "complementaryAnglePitch"],
+          "Pitch Comparación"
+        )}
+      {selectedChart === "Rate" &&
+        renderLineChart(
+          ["RateRoll", "RatePitch", "RateYaw"],
+          "Rate Comparación"
+        )}
+      {selectedChart === "Gyro" &&
+        renderLineChart(
+          ["GyroXdps", "GyroYdps", "GyroZdps"],
+          "Gyro Comparación"
+        )}
+      {selectedChart === "Input" &&
+        renderBarChart(
+          ["InputThrottle", "InputRoll", "InputPitch", "InputYaw"],
+          "Controles de Entrada"
+        )}
+      {selectedChart === "Motor" &&
+        renderBarChart(
+          ["MotorInput1", "MotorInput2", "MotorInput3", "MotorInput4"],
+          "Motores"
+        )}
     </div>
   );
 };
 
-export default SensorChart;
+export default React.memo(MultiSensorDashboard);
