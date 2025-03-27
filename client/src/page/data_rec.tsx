@@ -189,34 +189,35 @@ const MultiSensorDashboard = () => {
 
   const renderBarChart = useCallback(
     (keys: string[], title: string) => {
+      const lastData = data[data.length - 1]; // solo último dato
       const chartData = {
-        labels: data.map((d) => d.time),
-        datasets: keys.map((key) => ({
-          label: key,
-          data: data.map((d) =>
-            typeof d[key] === "number" ? (d[key] as number) : null
-          ),
-          backgroundColor: colores[key],
-          borderRadius: 4,
-        })),
+        labels: keys,
+        datasets: [
+          {
+            label: title,
+            data: keys.map((key) =>
+              typeof lastData?.[key] === "number"
+                ? (lastData[key] as number)
+                : 0
+            ),
+            backgroundColor: keys.map((key) => colores[key]),
+            borderRadius: 6,
+            barThickness: 40, // grosor fijo
+          },
+        ],
       };
 
       return (
-        <div style={{ width: "100%", height: "320px", marginBottom: "40px" }}>
+        <div style={{ width: "100%", height: "250px", marginBottom: "40px" }}>
           <h3 style={{ marginLeft: "10px" }}>{title}</h3>
           <Bar
             data={chartData}
             options={{
               responsive: true,
               maintainAspectRatio: false,
+              animation: false,
               plugins: {
-                legend: {
-                  position: "top",
-                  labels: {
-                    color: "#333",
-                    font: { size: 12 },
-                  },
-                },
+                legend: { display: false },
                 tooltip: {
                   mode: "index",
                   intersect: false,
@@ -224,15 +225,22 @@ const MultiSensorDashboard = () => {
               },
               scales: {
                 x: {
-                  ticks: { color: "#666" },
-                  grid: { display: false }, // Quitar la cuadrícula
+                  ticks: { color: "#ccc", font: { size: 12 } },
+                  grid: { display: false },
                 },
                 y: {
-                  ticks: { color: "#666" },
-                  grid: { display: false }, // Quitar la cuadrícula
+                  min: 800,
+                  max: 2000,
+                  ticks: {
+                    color: "#ccc",
+                    stepSize: 500,
+                    font: { size: 12 },
+                  },
+                  grid: {
+                    color: "#444",
+                  },
                 },
               },
-              animation: false,
             }}
           />
         </div>
