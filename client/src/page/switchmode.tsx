@@ -95,9 +95,9 @@ const ModeSwitch = () => {
           }
         }}
       >
-        <option value={0}>Modo 0 - Encender Motores</option>
+        <option value={0}>Modo 0 - Modo Piloto</option>
         <option value={1}>Modo 1 - Espera</option>
-        <option value={2}>Modo 2 - Apagar Motores</option>
+        <option value={2}>Modo 2 - Modo Manual</option>
       </select>
     </div>
   );
