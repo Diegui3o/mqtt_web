@@ -9,6 +9,7 @@ import {
   Settings,
   Search,
   Wrench,
+  AirVent,
 } from "lucide-react";
 import {
   Drawer,
@@ -104,6 +105,11 @@ export default function Layout() {
                 text: "Gráficos",
               },
               {
+                to: "/motor-simulation",
+                icon: <AirVent size={24} />,
+                text: "Motors",
+              },
+              {
                 to: "/settings",
                 icon: <Settings size={24} />,
                 text: "Ajustes",
@@ -122,10 +128,6 @@ export default function Layout() {
             ))}
           </List>
         </Drawer>
-        {/* Contenido principal */}
-        <div className="flex-1 p-4" style={{ marginLeft: isOpen ? -32 : -34 }}>
-          {/* Aquí va el contenido de las demás páginas */}
-        </div>
       </div>
     </div>
   );

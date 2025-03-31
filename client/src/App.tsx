@@ -8,6 +8,7 @@ import Graphics from "./page/graphics";
 import Settings from "./page/Settings";
 import Profile from "./page/Profile";
 import Calibration from "./page/Calibration";
+import MotorSimulation from "./page/MotorSimulation";
 
 const App: React.FC = () => {
   return (
@@ -34,6 +35,7 @@ const App: React.FC = () => {
             <Route path="/profile" element={<Profile />} />
             <Route path="/graphics" element={<Graphics />} />
             <Route path="/calibration" element={<Calibration />} />
+            <Route path="/motor-simulation" element={<MotorSimulation />} />
           </Routes>
         </Box>
       </Box>
