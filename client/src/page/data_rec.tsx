@@ -77,7 +77,7 @@ const dataReducer = (state: DatosSensor[], action: Action): DatosSensor[] => {
   switch (action.type) {
     case "ADD_DATA": {
       const newData = [...state, ...action.payload];
-      return newData.slice(-100); // mantener últimos 50 datos
+      return newData.slice(-130); // mantener últimos 50 datos
     }
     default:
       return state;
@@ -137,8 +137,8 @@ const MultiSensorDashboard = () => {
           borderColor: colores[key],
           backgroundColor: colores[key] + "33",
           borderWidth: 2,
-          tension: 0.3, // curva suave
-          pointRadius: 1,
+          tension: 0.6, // curva suave
+          pointRadius: 0.7,
           fill: false,
         })),
       };

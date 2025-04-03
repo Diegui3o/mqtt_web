@@ -79,7 +79,12 @@ export default function Dron3D() {
       </div>
 
       {/* 🛸 Escena 3D */}
-      <Canvas>
+      <Canvas
+        camera={{
+          position: [0, 1, 2.9],
+          fov: 50,
+        }}
+      >
         <Drone kalmanAngles={kalmanAngles} anglesData={anglesData} />
         <ambientLight intensity={0.5} />
         <directionalLight position={[5, 10, 5]} castShadow intensity={1.5} />
