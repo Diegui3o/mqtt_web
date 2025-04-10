@@ -82,14 +82,14 @@ Y publica comandos en `drone/control` para controlar los motores y LEDs.
 ✅ **Actualización de estado en el frontend** con WebSockets  
 ✅ **Modo de operación configurable** (0, 1 o 2)  
 ✅ **Middleware para manejo de errores** en Express
+✅ Integración con bases de datos como InfluxDB y QuestDB en diferentes ramas
 
 ---
 
 ## 🛠 Próximas Mejoras
 
-🔹 Integración con **InfluxDB** para almacenamiento de datos históricos  
 🔹 Implementación de **JWT** para autenticación de usuarios  
-🔹 Dashboard avanzado en **React** para visualización de datos
+🔹 Implemtacion con una experiencia unica para cada usuario con su propio drone
 
 ---
 
