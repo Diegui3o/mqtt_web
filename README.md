@@ -89,7 +89,7 @@ Y publica comandos en `drone/control` para controlar los motores y LEDs.
 ## 🛠 Próximas Mejoras
 
 🔹 Implementación de **JWT** para autenticación de usuarios  
-🔹 Implemtacion con una experiencia unica para cada usuario con su propio drone
+🔹 Experiencia personalizada para cada usuario, permitiendo que cada uno controle su propio drone de manera única.  
 
 ---
 
