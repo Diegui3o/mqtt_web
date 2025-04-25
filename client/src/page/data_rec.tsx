@@ -30,9 +30,13 @@ interface DatosSensor {
   time: string;
   roll?: number;
   pitch?: number;
+  yaw?: number;
   AccX?: number;
   AccY?: number;
   AccZ?: number;
+  RateRoll?: number;
+  RatePitch?: number;
+  RateYaw?: number;
   KalmanAngleRoll?: number;
   KalmanAnglePitch?: number;
   complementaryAngleRoll?: number;
@@ -45,12 +49,19 @@ interface DatosSensor {
   MotorInput2?: number;
   MotorInput3?: number;
   MotorInput4?: number;
+  Altura?: number;
+  tau_x?: number;
+  tau_y?: number;
+  tau_z?: number;
+  error_phi?: number;
+  error_theta?: number;
   [key: string]: number | string | undefined;
 }
 
 const colores: Record<string, string> = {
   roll: "#b07acc",
   pitch: "#3F51B5",
+  yaw: "#FF5722",
   RateRoll: "#1Ea2E5",
   RatePitch: "#F4ab00",
   RateYaw: "#F4dcca",
@@ -69,6 +80,12 @@ const colores: Record<string, string> = {
   MotorInput2: "#d84a75",
   MotorInput3: "#3F5bB5",
   MotorInput4: "#009688",
+  Altura: "#00BCD4",
+  tau_x: "#FF9800",
+  tau_y: "#9C27B0",
+  tau_z: "#8BC34A",
+  error_phi: "#E91E63",
+  error_theta: "#3F51B5",
 };
 
 type Action = { type: "ADD_DATA"; payload: DatosSensor[] };
@@ -77,7 +94,7 @@ const dataReducer = (state: DatosSensor[], action: Action): DatosSensor[] => {
   switch (action.type) {
     case "ADD_DATA": {
       const newData = [...state, ...action.payload];
-      return newData.slice(-130); // mantener últimos 50 datos
+      return newData.slice(-130); // mantener últimos 130 datos
     }
     default:
       return state;
@@ -94,12 +111,13 @@ const MultiSensorDashboard = () => {
         ...nuevoDato,
         roll: Number(nuevoDato.roll),
         pitch: Number(nuevoDato.pitch),
+        yaw: Number(nuevoDato.yaw),
         RateRoll: Number(nuevoDato.RateRoll),
         RatePitch: Number(nuevoDato.RatePitch),
         RateYaw: Number(nuevoDato.RateYaw),
-        GyroXdps: Number(nuevoDato.GyroXdps),
-        GyroYdps: Number(nuevoDato.GyroYdps),
-        GyroZdps: Number(nuevoDato.GyroZdps),
+        AccX: Number(nuevoDato.AccX),
+        AccY: Number(nuevoDato.AccY),
+        AccZ: Number(nuevoDato.AccZ),
         KalmanAngleRoll: Number(nuevoDato.KalmanAngleRoll),
         KalmanAnglePitch: Number(nuevoDato.KalmanAnglePitch),
         complementaryAngleRoll: Number(nuevoDato.complementaryAngleRoll),
@@ -112,6 +130,12 @@ const MultiSensorDashboard = () => {
         MotorInput2: Number(nuevoDato.MotorInput2),
         MotorInput3: Number(nuevoDato.MotorInput3),
         MotorInput4: Number(nuevoDato.MotorInput4),
+        Altura: Number(nuevoDato.Altura),
+        tau_x: Number(nuevoDato.tau_x),
+        tau_y: Number(nuevoDato.tau_y),
+        tau_z: Number(nuevoDato.tau_z),
+        error_phi: Number(nuevoDato.error_phi),
+        error_theta: Number(nuevoDato.error_theta),
         time: new Date(nuevoDato.time).toLocaleTimeString(),
       };
 
@@ -159,8 +183,12 @@ const MultiSensorDashboard = () => {
                 legend: {
                   position: "top",
                   labels: {
-                    color: "#333",
-                    font: { size: 12 },
+                    color: "#fff",
+                    font: {
+                      size: 14,
+                      family: "Calibri, sans-serif",
+                      weight: 500,
+                    },
                   },
                 },
                 tooltip: {
@@ -171,14 +199,14 @@ const MultiSensorDashboard = () => {
               scales: {
                 x: {
                   ticks: { color: "#666" },
-                  grid: { display: false }, // Quitar la cuadrícula
+                  grid: { display: false },
                 },
                 y: {
                   ticks: { color: "#666" },
-                  grid: { display: false }, // Quitar la cuadrícula
+                  grid: { display: false },
                 },
               },
-              animation: false, // ✅ Desactivar animación para suavidad
+              animation: false,
             }}
           />
         </div>
@@ -202,7 +230,7 @@ const MultiSensorDashboard = () => {
             ),
             backgroundColor: keys.map((key) => colores[key]),
             borderRadius: 6,
-            barThickness: 40, // grosor fijo
+            barThickness: 40,
           },
         ],
       };
@@ -217,7 +245,13 @@ const MultiSensorDashboard = () => {
               maintainAspectRatio: false,
               animation: false,
               plugins: {
-                legend: { display: false },
+                legend: {
+                  display: false,
+                  labels: {
+                    color: "#fff",
+                    font: { size: 12 },
+                  },
+                },
                 tooltip: {
                   mode: "index",
                   intersect: false,
@@ -229,11 +263,8 @@ const MultiSensorDashboard = () => {
                   grid: { display: false },
                 },
                 y: {
-                  min: 800,
-                  max: 2000,
                   ticks: {
                     color: "#ccc",
-                    stepSize: 500,
                     font: { size: 12 },
                   },
                   grid: {
@@ -270,9 +301,11 @@ const MultiSensorDashboard = () => {
           <option value="Roll">Roll Comparación</option>
           <option value="Pitch">Pitch Comparación</option>
           <option value="Rate">Rate Comparación</option>
-          <option value="Gyro">Gyro Comparación</option>
+          <option value="Tau Comparación">Tau Comparación</option>
           <option value="Input">Controles de Entrada</option>
           <option value="Motor">Motores</option>
+          <option value="Altura">Altura</option>
+          <option value="Errores">Errores</option>
         </select>
       </div>
 
@@ -291,11 +324,8 @@ const MultiSensorDashboard = () => {
           ["RateRoll", "RatePitch", "RateYaw"],
           "Rate Comparación"
         )}
-      {selectedChart === "Gyro" &&
-        renderLineChart(
-          ["GyroXdps", "GyroYdps", "GyroZdps"],
-          "Gyro Comparación"
-        )}
+      {selectedChart === "Tau Comparación" &&
+        renderLineChart(["tau_x", "tau_y", "tau_z"], "Tau Comparación")}
       {selectedChart === "Input" &&
         renderBarChart(
           ["InputThrottle", "InputRoll", "InputPitch", "InputYaw"],
@@ -306,6 +336,9 @@ const MultiSensorDashboard = () => {
           ["MotorInput1", "MotorInput2", "MotorInput3", "MotorInput4"],
           "Motores"
         )}
+      {selectedChart === "Altura" && renderLineChart(["Altura"], "Altura")}
+      {selectedChart === "Errores" &&
+        renderLineChart(["error_phi", "error_theta"], "Errores")}
     </div>
   );
 };
