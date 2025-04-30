@@ -4,8 +4,7 @@ import { connect } from 'mqtt';
 import { createServer } from 'http';
 import { envs } from './config/env.js';
 import { Server } from 'socket.io';
-import sensorRoutes from './server/server.js';
-import { insertSensorData, insertControlState } from './server/questdb.js';
+import { insertSensorData, insertControlState, insertNewFlight } from './server/questdb.js';
 
 const app = express();
 const server = createServer(app);
@@ -16,9 +15,6 @@ app.use(cors({
     methods: ['GET', 'POST'],
 }));
 app.use(json());
-
-// Rutas
-app.use('/api/sensor', sensorRoutes);
 
 // Inicializar Socket.IO
 const io = new Server(server, {
@@ -50,6 +46,8 @@ let estadoControl = {
     motor: false
 };
 let anglesData = {}, ratesData = {}, accData = {}, gyroData = {}, kalmanData = {}, motorsData = {};
+let isRecording = false;
+let flightId = null;
 
 mqttClient.on('connect', () => {
     console.log('✅ Conectado al broker MQTT');
@@ -78,8 +76,26 @@ mqttClient.on('message', (topic, message) => {
         case RATES_TOPIC: ratesData = data; break;
         case ACC_TOPIC: accData = data; break;
         case GYRO_TOPIC: gyroData = data; break;
-        case KALMAN_TOPIC: kalmanData = data; break;
-        case MOTORS_TOPIC: motorsData = data; break;
+        case KALMAN_TOPIC:
+            kalmanData = {
+                KalmanAngleRoll: data.KalmanAngleRoll,
+                KalmanAnglePitch: data.KalmanAnglePitch,
+                error_phi: data.error_phi,
+                error_theta: data.error_theta,
+                InputThrottle: data.InputThrottle, // Asegúrate de incluirlo
+                InputRoll: data.InputRoll,
+                InputPitch: data.InputPitch,
+                InputYaw: data.InputYaw,
+            };
+            break;
+        case MOTORS_TOPIC:
+            motorsData = {
+                MotorInput1: data.MotorInput1,
+                MotorInput2: data.MotorInput2,
+                MotorInput3: data.MotorInput3,
+                MotorInput4: data.MotorInput4,
+                Altura: data.T, // Asegúrate de incluirlo
+            };
         case MODE_TOPIC:
             const nuevoModo = parseInt(message.toString());
             if ([0, 1, 2].includes(nuevoModo)) {
@@ -101,13 +117,31 @@ mqttClient.on('message', (topic, message) => {
     };
 
     io.emit('angles', combinedData);
-    insertSensorData(combinedData, modo).catch(console.error);
+
+    if (isRecording && flightId) {
+        const keys = Object.keys(combinedData);
+        const hasValidData = keys.length > 0 && keys.some(key => {
+            const value = combinedData[key];
+            return typeof value === 'number' && !isNaN(value);
+        });
+
+        if (hasValidData) {
+            //console.log("✅ Insertando datos válidos:", combinedData);
+            //console.log("Kalman Data recibido:", kalmanData);
+            insertSensorData(combinedData, flightId).catch(err => {
+                console.error("❌ Error al insertar sensor data:", err.message);
+            });
+        } else {
+            console.warn("⚠️ Datos no válidos, no se insertó nada:", combinedData);
+        }
+    }
 
     io.emit("datosCompleto", {
         time: new Date().toISOString(),
         ...combinedData
     });
 });
+
 
 io.on('connection', (socket) => {
     socket.emit('modo', modo);
@@ -156,13 +190,16 @@ app.get('/modo/:numero', (req, res) => {
 });
 
 // Endpoint para obtener modo actual
-app.get('/modo/actual', async (req, res) => {
+app.get('/modo/actual', (req, res) => {
     try {
-        const current = modo;
-        res.json({ modo: current });
+        if (typeof modo === 'number' && [0, 1, 2].includes(modo)) {
+            res.status(200).json({ modo });
+        } else {
+            res.status(400).json({ error: 'Modo actual no válido' });
+        }
     } catch (error) {
-        console.error('Error al consultar el modo:', error);
-        res.status(500).json({ error: 'Error al consultar el modo' });
+        console.error('❌ Error al obtener el modo actual:', error.message);
+        res.status(500).json({ error: 'Error al obtener el modo actual' });
     }
 });
 
@@ -180,6 +217,51 @@ app.use((err, req, res, next) => {
     console.error('❌ Error del servidor:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
 });
+
+function convertObjectToMatrix(obj, rows = 3, cols = 6) {
+    const matrix = Array.from({ length: rows }, () => Array(cols).fill(0));
+    for (const [key, value] of Object.entries(obj)) {
+        const match = key.match(/\[(\d+)\]\[(\d+)\]/);
+        if (match) {
+            const row = parseInt(match[1], 10);
+            const col = parseInt(match[2], 10);
+            matrix[row][col] = value;
+        }
+    }
+    return matrix;
+}
+
+app.post('/start-recording', async (req, res) => {
+    try {
+        const { Kc, Ki, mass, armLength, inputThrottle } = req.body || {};
+        console.log('🌟 Recibido en /start-recording:', { Kc, Ki, mass, armLength, inputThrottle });
+
+        // Convierte los objetos Kc y Ki a matrices
+        const kcMatrix = convertObjectToMatrix(Kc);
+        const kiMatrix = convertObjectToMatrix(Ki, 3, 3); // Ki es 3x3
+
+        // Inserta el nuevo vuelo y obtiene el flightId
+        flightId = await insertNewFlight(Kc, Ki, mass, armLength, inputThrottle);
+        console.log(`🌟 Nuevo vuelo registrado con flightId: ${flightId}`);
+
+        // Establecer que estamos grabando
+        isRecording = true;
+
+        // Detener la grabación automáticamente después de 20 segundos
+        setTimeout(() => {
+            isRecording = false;
+            flightId = null; // Limpia el flightId después de detener la grabación
+            console.log("⏹️ Grabación detenida automáticamente después de 20 segundos");
+        }, 20000); // 20 segundos en milisegundos
+
+        // Envía la respuesta al cliente
+        res.status(200).json({ message: 'Recording started', flightId });
+    } catch (error) {
+        console.error('❌ Error al iniciar grabación:', error.message);
+        res.status(500).json({ error: 'Error al iniciar grabación', details: error.message });
+    }
+});
+
 
 // Iniciar servidor
 server.listen(PORT, () => {

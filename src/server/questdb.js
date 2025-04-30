@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { v4 as uuidv4 } from 'uuid';
 
 const pool = new pg.Pool({
     host: 'localhost',
@@ -22,7 +23,6 @@ async function executeQueryWithRetry(query, retries = 5, delay = 1000) {
                 console.warn(`⚠️ Table busy, retrying in ${delay}ms...`);
                 await new Promise(resolve => setTimeout(resolve, delay));
             } else {
-                //console.error('❌ Insert error:', error.message);
                 throw error;
             }
         }
@@ -30,42 +30,92 @@ async function executeQueryWithRetry(query, retries = 5, delay = 1000) {
     throw new Error('❌ Max retries reached, could not execute query');
 }
 
-// Exporta la función insertSensorData solo una vez
-export async function insertSensorData(data, modo) {
+// Inserta un nuevo vuelo (con los 9 datos correctos de Kc y Ki)
+export async function insertNewFlight(Kc, Ki, mass = null, armLength = null) {
+    const startTime = new Date().toISOString();
+    const flightId = uuidv4();
+
+    const kc_array = [
+        Kc['Kc_at[0][0]'], Kc['Kc_at[1][1]'], Kc['Kc_at[2][2]'],
+        Kc['Kc_at[0][3]'], Kc['Kc_at[1][4]'], Kc['Kc_at[2][5]']
+    ];
+
+    const ki_array = [
+        Ki['Ki_at[0][0]'], Ki['Ki_at[1][1]'], Ki['Ki_at[2][2]']
+    ];
+
+    const [
+        kc_0_0, kc_1_1, kc_2_2, kc_0_3, kc_1_4, kc_2_5
+    ] = kc_array.map(safe);
+
+    const [
+        ki_0_0, ki_1_1, ki_2_2
+    ] = ki_array.map(safe);
+
+    const query = `
+        INSERT INTO flights (
+            flight_id, start_time, mass, arm_length,
+            kc_0_0, kc_1_1, kc_2_2,
+            kc_0_3, kc_1_4, kc_2_5,
+            ki_0_0, ki_1_1, ki_2_2
+        ) VALUES (
+            '${flightId}', '${startTime}', ${safe(mass)}, ${safe(armLength)},
+            ${kc_0_0}, ${kc_1_1}, ${kc_2_2},
+            ${kc_0_3}, ${kc_1_4}, ${kc_2_5},
+            ${ki_0_0}, ${ki_1_1}, ${ki_2_2}
+        )
+    `;
+
+    try {
+        await executeQueryWithRetry(query);
+        return flightId;
+    } catch (err) {
+        console.error('❌ Error al insertar nuevo vuelo:', err);
+        throw err;
+    }
+}
+
+
+// Inserta datos de sensores asociados al vuelo
+export async function insertSensorData(sensor, flightId) {
     const time = new Date().toISOString();
 
     const {
-        AngleRoll, AnglePitch, AngleYaw,
         RateRoll, RatePitch, RateYaw,
-        AccX, AccY, AccZ,
-        GyroXdps, GyroYdps, GyroZdps,
+        tau_x, tau_y, tau_z,
         KalmanAngleRoll, KalmanAnglePitch,
-        MotorInput1, MotorInput2, MotorInput3, MotorInput4
-    } = data;
+        error_phi, error_theta,
+        InputThrottle,
+        InputRoll, InputPitch, InputYaw,
+        MotorInput1, MotorInput2, MotorInput3, MotorInput4,
+        Altura
+    } = sensor;
 
     const query = `
         INSERT INTO sensor_data (
-            time, roll, pitch, yaw,
+            flight_id, time,
             rate_roll, rate_pitch, rate_yaw,
-            acc_x, acc_y, acc_z,
-            gyro_x, gyro_y, gyro_z,
-            kalman_roll, kalman_pitch,
+            tau_x, tau_y, tau_z,
+            kalman_angle_roll, kalman_angle_pitch,
+            error_phi, error_theta,
+            input_throttle, input_roll, input_pitch, input_yaw, -- Añadido input_throttle
             motor_1, motor_2, motor_3, motor_4,
-            modo
+            altura
         ) VALUES (
-            '${time}', ${safe(AngleRoll)}, ${safe(AnglePitch)}, ${safe(AngleYaw)},
+            '${flightId}', '${time}',
             ${safe(RateRoll)}, ${safe(RatePitch)}, ${safe(RateYaw)},
-            ${safe(AccX)}, ${safe(AccY)}, ${safe(AccZ)},
-            ${safe(GyroXdps)}, ${safe(GyroYdps)}, ${safe(GyroZdps)},
+            ${safe(tau_x)}, ${safe(tau_y)}, ${safe(tau_z)},
             ${safe(KalmanAngleRoll)}, ${safe(KalmanAnglePitch)},
+            ${safe(error_phi)}, ${safe(error_theta)},
+            ${safe(InputThrottle)}, ${safe(InputRoll)}, ${safe(InputPitch)}, ${safe(InputYaw)},
             ${safe(MotorInput1)}, ${safe(MotorInput2)}, ${safe(MotorInput3)}, ${safe(MotorInput4)},
-            ${safe(modo)}
+            ${safe(Altura)}
         )
     `;
     try {
         await executeQueryWithRetry(query);
     } catch (err) {
-        //console.error("❌ Insert error:", err.message);
+        console.error("❌ Insert error:", err.message);
     }
 }
 
@@ -79,6 +129,6 @@ export async function insertControlState(modo, ledStatus, motorStatus) {
     try {
         await executeQueryWithRetry(query);
     } catch (err) {
-        //console.error("❌ Insert error:", err.message);
+        console.error("❌ Insert error:", err.message);
     }
 }

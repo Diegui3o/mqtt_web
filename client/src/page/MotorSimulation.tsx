@@ -1,24 +1,6 @@
 import { useEffect, useReducer } from "react";
 import { io } from "socket.io-client";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
-import { Bar } from "react-chartjs-2";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
+import SwitchControl from "./switchmode";
 
 const socket = io("http://localhost:3002");
 
@@ -192,136 +174,6 @@ const MotorDashboard = () => {
             </span>
           </div>
         </div>
-
-        {/* Detailed Value Indicators */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            width: "100%",
-            marginTop: "10px",
-            fontSize: "0.8rem",
-            color: "#aaa",
-          }}
-        >
-          <span>1000 μs</span>
-          <span>1500 μs</span>
-          <span>2000 μs</span>
-        </div>
-
-        {/* Bar Indicator */}
-        <div
-          style={{
-            width: "100%",
-            height: "10px",
-            backgroundColor: "#444",
-            borderRadius: "5px",
-            marginTop: "5px",
-            overflow: "hidden",
-            zIndex: 2,
-          }}
-        >
-          <div
-            style={{
-              width: `${percentage}%`,
-              height: "100%",
-              backgroundColor: coloresMotores[motorKey],
-              borderRadius: "5px",
-              transition: "width 0.3s ease",
-            }}
-          />
-        </div>
-      </div>
-    );
-  };
-
-  const renderMotorChart = () => {
-    const lastData = data[data.length - 1];
-    const motorKeys = [
-      "MotorInput1",
-      "MotorInput2",
-      "MotorInput3",
-      "MotorInput4",
-    ];
-
-    const chartData = {
-      labels: motorKeys.map((key) => key.replace("MotorInput", "Motor ")),
-      datasets: [
-        {
-          data: motorKeys.map((key) =>
-            normalizeValue(Number(lastData?.[key] ?? 1000))
-          ),
-          backgroundColor: motorKeys.map((key) => coloresMotores[key]),
-          borderRadius: 6,
-          barThickness: 40,
-        },
-      ],
-    };
-
-    return (
-      <div
-        style={{
-          gridArea: "chart",
-          backgroundColor: "#2a2a2a",
-          borderRadius: "10px",
-          padding: "20px",
-          boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          overflow: "hidden",
-        }}
-      >
-        <h3
-          style={{
-            color: "#fff",
-            margin: "0 0 20px 0",
-            textAlign: "center",
-          }}
-        >
-          Valores PWM de los Motores (1000-2000 μs)
-        </h3>
-        <div
-          style={{
-            width: "100%",
-            maxWidth: "600px",
-            height: "300px",
-          }}
-        >
-          <Bar
-            data={chartData}
-            options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              animation: false,
-              plugins: {
-                legend: { display: false },
-                tooltip: {
-                  callbacks: {
-                    label: (context) => `${context.parsed.y} μs`,
-                  },
-                },
-              },
-              scales: {
-                x: {
-                  ticks: { color: "#fff" },
-                  grid: { display: false },
-                },
-                y: {
-                  min: 1000,
-                  max: 2000,
-                  ticks: {
-                    color: "#fff",
-                    stepSize: 100,
-                    callback: (value) => `${value} μs`,
-                  },
-                  grid: { color: "#444" },
-                },
-              },
-            }}
-          />
-        </div>
       </div>
     );
   };
@@ -349,11 +201,11 @@ const MotorDashboard = () => {
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
-          gridTemplateRows: "1fr 1fr 1.5fr",
+          gridTemplateRows: "1fr 1fr 1fr",
           gridTemplateAreas: `
           "motor4 motor1"
           "motor3 motor2"
-          "chart chart"
+          "switch switch"
         `,
           gap: "20px",
           maxWidth: "1000px",
@@ -376,7 +228,32 @@ const MotorDashboard = () => {
           "motor3"
         )}
         {renderMotorQuadrant("MotorInput2", "Motor Trasero Derecho", "motor2")}
-        {renderMotorChart()}
+
+        {/* SwitchControl Component */}
+        <div
+          style={{
+            gridArea: "switch",
+            backgroundColor: "#2a2a2a",
+            borderRadius: "10px",
+            padding: "20px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
+          }}
+        >
+          <h3
+            style={{
+              color: "#fff",
+              marginBottom: "20px",
+              fontSize: "1.5rem",
+            }}
+          >
+            Modo de Conmutación
+          </h3>
+          <SwitchControl />
+        </div>
       </div>
     </div>
   );
